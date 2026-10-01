@@ -4,7 +4,7 @@ These are *meaningful* tests: they check that loading and the derived measure
 behave as expected. They are intentionally simple — you will add more as the
 project grows (Week 9 covers testing in depth).
 
-Run from the repository root:  pytest -q
+Run from the repository root:  python -m pytest -q
 """
 import sys
 from pathlib import Path
