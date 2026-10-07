@@ -148,7 +148,12 @@ def check_business_key_uniqueness(frame: pd.DataFrame) -> CheckResult:
 
     Hint: pandas `DataFrame.duplicated` accepts a subset of columns.
     """
-    raise NotImplementedError("Write check_business_key_uniqueness")
+    dup = frame.duplicated(subset=BUSINESS_KEY, keep=False)
+    return result(
+        "business_key_uniqueness",
+        dup,
+        "each line-hour combination appears at most once in the file",
+    )
 
 
 def check_known_line_ids(frame: pd.DataFrame) -> CheckResult:
@@ -161,7 +166,14 @@ def check_known_line_ids(frame: pd.DataFrame) -> CheckResult:
     Add a comment saying what a cleaning step would have to record before it
     could be allowed to strip them instead.
     """
-    raise NotImplementedError("Write check_known_line_ids")
+    # A cleaning step would need to record the raw value, the transformation applied,
+    # the justification, and an approver's sign-off before normalizing line identifiers.
+    invalid = ~frame["line_id"].isin(EXPECTED_LINES)
+    return result(
+        "known_line_ids",
+        invalid,
+        "line_id is one of the three contracted production lines",
+    )
 
 
 def check_positive_energy(frame: pd.DataFrame) -> CheckResult:
@@ -170,7 +182,12 @@ def check_positive_energy(frame: pd.DataFrame) -> CheckResult:
     Fail any row where it does not. Keep the original value in the file: the
     check reports the row, it does not correct the reading.
     """
-    raise NotImplementedError("Write check_positive_energy")
+    failing = frame["energy_kwh"].notna() & (frame["energy_kwh"] <= 0)
+    return result(
+        "positive_energy",
+        failing,
+        "energy_kwh is strictly positive for each active hourly period",
+    )
 
 
 def check_rejects_within_output(frame: pd.DataFrame) -> CheckResult:
@@ -180,7 +197,15 @@ def check_rejects_within_output(frame: pd.DataFrame) -> CheckResult:
     the two columns mean. Fail any row where rejected_units exceeds
     units_produced, and also consider whether a negative count is possible.
     """
-    raise NotImplementedError("Write check_rejects_within_output")
+    valid = frame["rejected_units"].notna() & frame["units_produced"].notna()
+    failing = valid & (
+        (frame["rejected_units"] > frame["units_produced"]) | (frame["rejected_units"] < 0)
+    )
+    return result(
+        "rejects_within_output",
+        failing,
+        "rejected_units cannot exceed units_produced or be less than zero",
+    )
 
 
 def check_shift_matches_hour(frame: pd.DataFrame) -> CheckResult:
@@ -192,7 +217,16 @@ def check_shift_matches_hour(frame: pd.DataFrame) -> CheckResult:
 
     Hint: `pd.to_datetime(...).dt.hour` gives you the hour as a number.
     """
-    raise NotImplementedError("Write check_shift_matches_hour")
+    parsed = pd.to_datetime(frame["timestamp"], format="ISO8601", errors="coerce")
+    valid = parsed.notna()
+    expected = pd.Series("Night", index=frame.index)
+    expected[(parsed.dt.hour >= 6) & (parsed.dt.hour < 18)] = "Day"
+    failing = valid & (frame["shift"] != expected)
+    return result(
+        "shift_matches_hour",
+        failing,
+        "shift label matches the course schedule rule for the timestamp hour",
+    )
 
 
 def check_expected_line_hour_coverage(frame: pd.DataFrame) -> CheckResult:
@@ -203,7 +237,35 @@ def check_expected_line_hour_coverage(frame: pd.DataFrame) -> CheckResult:
     leave `affected_rows` empty, and count distinct business keys so that a
     duplicated line-hour does not disguise a missing one.
     """
-    raise NotImplementedError("Write check_expected_line_hour_coverage")
+    valid_rows = frame.dropna(subset=BUSINESS_KEY)
+    distinct_keys = valid_rows.drop_duplicates(subset=BUSINESS_KEY)
+    observed = {}
+    passed = True
+    for line in sorted(EXPECTED_LINES):
+        count = int((distinct_keys["line_id"] == line).sum())
+        observed[line] = count
+        if count != EXPECTED_HOURS_PER_LINE:
+            passed = False
+    return CheckResult(
+        name="expected_line_hour_coverage",
+        passed=passed,
+        observed=observed,
+        expectation=f"each expected line has exactly {EXPECTED_HOURS_PER_LINE} distinct hourly records",
+        affected_rows=[],
+    )
+
+
+def check_output_during_full_downtime(frame: pd.DataFrame) -> CheckResult:
+    """A line cannot produce units during an hour with full 60 minutes downtime.
+
+    Fail any row where downtime_min is 60.0 but units_produced is greater than zero.
+    """
+    failing = (frame["downtime_min"] == 60.0) & (frame["units_produced"] > 0)
+    return result(
+        "output_during_full_downtime",
+        failing,
+        "units_produced must be zero when downtime is sixty minutes",
+    )
 
 
 CHECKS = [
@@ -219,6 +281,7 @@ CHECKS = [
     check_motor_temperature_review_range,
     check_shift_matches_hour,
     check_expected_line_hour_coverage,
+    check_output_during_full_downtime,
 ]
 
 

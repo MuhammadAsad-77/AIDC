@@ -153,11 +153,11 @@ This file does not predict machine failure. Nothing you do today changes that.
 
 ### Source
 
-- File: `data/raw/shift_log_<your-username>.csv`
+- File: `data/raw/shift_log_muhammadasad-77.csv`
 - Origin: simulated for this course by `src/make_variant.py`, seeded from your username
 - Coverage: three production lines, hourly, one simulated day
 - Personal or sensitive data: none
-- Fingerprint: **paste the SHA-256 from the notebook**
+- Fingerprint: `3738f7285c8c295ae0871547855a1dd098de664ba9593502f76eb090b495ab6f`
 
 ### Licence and reuse boundary
 
@@ -166,13 +166,13 @@ reuse licence is asserted. Ask the instructor before publishing or redistributin
 
 ### Assumptions to complete
 
-- One row represents: **[complete]**
-- The decision window is: **[complete]**
-- The expected line identifiers are: **[complete]**
-- The expected timestamp cadence is: **[complete]**
-- The engineering source for the temperature limit is: **[complete or state Unknown]**
-- The permitted analytical use is: **[complete]**
-- A prohibited claim is: **[complete]**
+- One row represents: One production line operating in a single hourly period across one simulated day
+- The decision window is: Shift handover meeting at 08:00 evaluating the prior 24 operating hours
+- The expected line identifiers are: `Line_A`, `Line_B`, and `Line_C`
+- The expected timestamp cadence is: Hourly observations at the start of each hour (`:00`) in ISO-8601 format
+- The engineering source for the temperature limit is: Unknown (pedagogical course review threshold of 40–100 °C, not an OEM or plant safety limit)
+- The permitted analytical use is: Descriptive shift handover prioritization and qualitative maintenance review
+- A prohibited claim is: Predicting mechanical machine breakdown or computing official contractual OEE and plant energy metrics
 
 ## Before you push
 

@@ -149,6 +149,15 @@ def test_expected_line_hour_coverage_is_not_fooled_by_a_duplicate():
     assert not vd.check_expected_line_hour_coverage(disguised).passed
 
 
+def test_output_during_full_downtime_rejects_output():
+    assert vd.check_output_during_full_downtime(frame([row(downtime_min=60.0, units_produced=0)])).passed
+    impossible = frame([row(downtime_min=60.0, units_produced=400)])
+    result = vd.check_output_during_full_downtime(impossible)
+    assert not result.passed
+    assert result.affected_rows == [2]
+
+
+
 # --- rules that apply to every check ---------------------------------------
 
 def run_or_skip(check, data):
