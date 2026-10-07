@@ -20,7 +20,7 @@ checks. Do not go back and improve it afterwards; the gap is the point.
 | # | Record (line and hour) | What I noticed |
 |---|---|---|
 | 1 | Line_C at 13:00 (CSV line 24) | Downtime recorded as 91.3 minutes within a 60-minute hourly period |
-| 2 | Line_B at 00:00 (CSV line 56) | `energy_kwh` value is missing / blank |
+| 2 | Line_B at 00:00 (CSV line 56) | `energy_kwh` value is missing / blank (`NaN`) |
 | 3 | Line_C at 05:00 (CSV line 72) | Non-ISO timestamp format (`13/01/2026 05:00`) and high motor temperature (105.4 °C) |
 | 4 | Line_A at 10:00 (CSV line 73) | Exact duplicate of CSV line 13 appended at the end of the file |
 
@@ -31,29 +31,29 @@ counting it twice.
 
 | Check | CSV line(s) | Observation (no speculation) | Impossible or surprising? | What should happen next | Who owns it |
 |---|---|---|---|---|---|
-| `timestamp_parse` | 72 | Timestamp string is `"13/01/2026 05:00"` instead of ISO-8601 (`YYYY-MM-DDTHH:MM`) | Impossible under schema | Correct OT gateway timestamp format string; confirm observation belongs to 05:00 | OT Data Engineer |
-| `required_values_complete` | 56 | `energy_kwh` is missing (`NaN`) for Line_B at 00:00 | Impossible under contract | Check physical submeter memory log to recover true energy reading | Electrical Maintenance |
-| `exact_row_uniqueness` & `business_key_uniqueness` | 13, 73 | Line_A at 10:00 is duplicated verbatim as record 73 | Impossible (redundant data) | Remove duplicate record after logging transformation in pipeline audit trail | Data Pipeline Owner |
-| `downtime_range` | 24 | `downtime_min` is 91.3 min in a 60-minute window | Impossible under contract | Audit shift operator log to confirm if reading was 9.1 min or overflow from previous hour | Shift Supervisor |
-| `expected_line_hour_coverage` | Absence at Line_A 08:00 | Line_A has only 23 hourly records; the 08:00 observation is completely missing | Impossible under coverage SLA | Query raw edge buffer for Line_A 08:00 packet to see if network transmission dropped | Plant Network Admin |
-| `motor_temperature_review_range` | 72 | `motor_temp_c` is 105.4 °C (> 100.0 °C review threshold) | Surprising (physically possible) | Dispatch technician to check motor cooling, lubrication, and thermocouple calibration | Maintenance Supervisor |
+| `timestamp_parse` | 72 | Field value is `"13/01/2026 05:00"`; does not conform to ISO-8601 (`YYYY-MM-DDTHH:MM`) | Impossible under contract | Correct telemetry logger format string; verify observation belongs to 05:00 | OT Data Engineer |
+| `required_values_complete` | 56 | Field `energy_kwh` is empty string (`NaN`) for Line_B at 00:00 | Impossible under contract | Query physical submeter non-volatile memory buffer to recover true reading | Electrical Maintenance |
+| `exact_row_uniqueness` & `business_key_uniqueness` | 13, 73 | Line_A at 10:00 is repeated verbatim as record 73 | Impossible (redundant data) | Drop duplicate record 73 and document deduplication in pipeline audit log | Data Pipeline Owner |
+| `downtime_range` | 24 | Field `downtime_min` is 91.3 min in a 60-minute window | Impossible under contract | Inspect physical operator paper shift log to check if reading was 9.1 min or prior shift spillover | Shift Supervisor |
+| `expected_line_hour_coverage` | Absence at Line_A 08:00 | Line_A has 23 distinct line-hours instead of 24; 08:00 record is completely absent | Impossible under coverage SLA | Query gateway network drop buffer for Line_A 08:00 to recover missing packet | Plant Network Admin |
+| `motor_temperature_review_range` | 72 | Field `motor_temp_c` is 105.4 °C (> 100.0 °C review threshold) | Surprising (physically possible) | Dispatch technician to perform thermal imaging and bearing vibration checks on Line_C | Maintenance Supervisor |
 
 ## 4. The gap
 
-- Found by the checks, missed by me: The absence of Line_A at 08:00 (coverage gap). Row-by-row manual scanning misses records that are not in the file.
-- Found by me, covered by no check: Cross-column operational impossibility, such as high production occurring during a full 60-minute downtime hour.
-- The check I added or would add as a result: `check_output_during_full_downtime` to ensure `units_produced` is 0 whenever `downtime_min` is 60.0.
+- Found by the checks, missed by me: The absence of Line_A at 08:00 (coverage gap). Row-by-row manual scanning inspects rows that exist, but cannot detect missing rows without aggregating distinct hourly keys.
+- Found by me, covered by no check: Cross-column operational impossibility, specifically claiming 400+ units of production during an hour with 60.0 minutes of downtime.
+- The check I added or would add as a result: `check_output_during_full_downtime` to assert `units_produced == 0` whenever `downtime_min == 60.0`.
 
 ## 5. The judgement call
 
 The high motor temperature reading is unusual, not impossible.
 
 - Three explanations, one of which is not a fault:
-  1. Legitimate high motor load or mechanical friction surge during heavy processing (not a fault).
-  2. Thermocouple sensor drift, faulty wiring, or telemetry circuit noise.
-  3. Motor cooling blower failure or clogged air ventilation filter.
-- The single piece of evidence that would separate them: High-frequency secondary SCADA telemetry (motor vibration, current draw, ambient temperature) alongside physical inspection logs.
-- Who holds it: Shift maintenance technician and plant electrical engineering team.
+  1. *Real heavy mechanical load or bearing friction surge (not a fault)*: The motor operated under legitimate heavy mechanical throughput or dense material processing.
+  2. *Sensor drift or thermocouple wiring degradation*: Telemetry ADC noise, lead wire oxidation, or thermocouple degradation producing an inflated reading.
+  3. *Cooling or ventilation failure*: Auxiliary coolant blower failure or clogged motor housing ventilation intake.
+- The single piece of evidence that would separate them: High-frequency secondary SCADA telemetry (motor electrical current draw, vibration spectrum, ambient cabinet temperature) alongside physical inspection logs.
+- Who holds it: Shift electrical maintenance technician and plant OT systems engineer.
 
 ## 6. What this file can and cannot support
 
@@ -61,4 +61,7 @@ Connect this back to the Week 2 decision boundary in two or three sentences.
 Name one calculation that is still safe and one that is not, and say why the
 difference follows from the specific faults you found.
 
-This file can support qualitative shift handover discussions to alert supervisors to lines needing immediate physical inspection (such as Line_C's elevated motor temperature). However, it cannot support plant-wide energy efficiency calculations or automated failure modeling because missing energy values (Line_B at 00:00), impossible downtime (Line_C at 13:00), duplicated production (Line_A at 10:00), and missing hourly coverage (Line_A at 08:00) distort totals and aggregate statistics.
+This file can support qualitative shift handover discussions to alert supervisors to equipment needing immediate physical inspection (such as Line_C's elevated 105.4 °C motor temperature). 
+
+- **Safe calculation**: Comparing shift-level unit throughput between Line_A and Line_B during normal Day shift hours (excluding the duplicated row 73), or ranking lines by peak observed temperature to direct maintenance attention.
+- **Unsafe calculation**: Calculating total 24-hour plant energy efficiency (kWh/unit) or line availability (OEE). Missing energy at Line_B 00:00 distorts power totals, impossible downtime of 91.3 min at Line_C 13:00 corrupts availability percentages, duplicated row 73 artificially inflates Line_A output, and the missing Line_A 08:00 record leaves a gap in 24-hour coverage.
