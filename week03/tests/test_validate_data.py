@@ -1,6 +1,6 @@
 """Tests for the Week 3 validator.
 
-Run them from the project root:
+Run them from the project root: 
 
     pytest -q
 

@@ -1,7 +1,7 @@
 # Week 3 Attack Log
 
 Validation is never finished. The only way to find out what your checks miss is
-to have someone try to get past them.
+to have someone try to get past them. 
 
 ## The round
 

@@ -5,7 +5,7 @@ supervisor is going to decide which production line gets attention today.
 
 Your job in the next two hours is not to clean the file. It is to find out what
 the file will not support, write checks that catch it next time, and put your
-name to a decision about its use.
+name to a decision about its use. 
 
 ## Your file is yours
 

@@ -14,7 +14,7 @@ Every check answers the same four questions:
 
 A check never repairs data. It produces evidence and lets a person decide.
 """
-
+ 
 from __future__ import annotations
 
 import argparse

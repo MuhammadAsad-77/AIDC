@@ -1,7 +1,7 @@
 # Week 3 Data Quality Report
 
 Keep this to one page. A supervisor should be able to read it in two minutes
-and know what they may do with the file.
+and know what they may do with the file. 
 
 ## 1. What I examined
 

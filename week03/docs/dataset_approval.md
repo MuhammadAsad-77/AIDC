@@ -3,7 +3,7 @@
 ## The decision, in one sentence
 
 Complete this sentence exactly. It is the sentence you would defend in a
-handover meeting, and it is what you will read aloud if asked.
+handover meeting, and it is what you will read aloud if asked. 
 
 > This file **may** be used to guide qualitative descriptive shift handover review and prioritize physical maintenance checks on Line_C,
 > but **may not** be used to calculate contractual plant OEE, automate maintenance scheduling, or train predictive failure models,
