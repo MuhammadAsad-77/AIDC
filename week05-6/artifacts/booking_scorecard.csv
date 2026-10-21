@@ -1,0 +1,9 @@
+booking,kwh_over,kwh_short,hours_short,cost,hours_scored,share_of_hours_short
+"rule, no margin",230.7,243.8,45,962.1,87,0.52
+"rule, + 4.0 kWh",447.8,115.1,23,793.0,87,0.26
+"line mean, no margin",233.3,332.2,42,1229.9,87,0.48
+"line mean, + 6.0 kWh",549.3,121.8,25,914.8,87,0.29
+"regression, no margin",196.1,263.5,50,986.6,87,0.57
+"regression, + 3.7 kWh",381.5,127.2,26,763.1,87,0.3
+"improved, no margin",178.6,252.6,49,936.6,87,0.56
+"improved, + 3.6 kWh",356.8,118.4,23,712.1,87,0.26
